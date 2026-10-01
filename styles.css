@@ -291,3 +291,24 @@ table.stats td.k { text-align: center; color: var(--dim); font-size: 11px; lette
   .tag { margin-bottom: 12px; }
   .opt .v { padding: 6px 2px 6px 18px; }
 }
+
+/* --- controls ----------------------------------------------------------------------- */
+#controls { background: rgba(3, 4, 8, 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 20; }
+.controlsPanel { max-height: 94vh; overflow-y: auto; gap: 12px; }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.presets button { background: none; border: 1px solid var(--line); padding: 8px 14px; font-weight: 800; font-size: 12px; letter-spacing: 0.12em; }
+.presets button.on { border-color: var(--orange); color: var(--orange); }
+table.binds { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.binds th { font-family: var(--display); font-size: 10px; letter-spacing: 0.24em; color: var(--dim); font-weight: normal; padding: 4px 6px; }
+table.binds td { padding: 3px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+table.binds td.act { text-align: left; font-weight: 700; color: #cfd2da; padding-right: 14px; white-space: nowrap; }
+table.binds button.slot {
+  width: 100%; min-width: 74px; background: rgba(255,255,255,0.05); border: 1px solid transparent;
+  padding: 7px 8px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
+}
+table.binds button.slot:hover { border-color: rgba(255,255,255,0.25); }
+table.binds button.slot.empty { color: var(--dim); }
+table.binds button.slot.listening { border-color: var(--orange); color: var(--orange); animation: pulse 0.6s infinite alternate; }
+table.binds td.fixed { color: var(--dim); font-size: 11px; text-align: center; letter-spacing: 0.12em; }
+.bindButtons { display: flex; gap: 12px; align-items: center; }
+#bindHint.warn { color: #ffd36b; }

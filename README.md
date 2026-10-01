@@ -31,7 +31,12 @@ npm test             # the simulation and the score board, headless
 | Camera          | `C`             | Select    |
 | Pause           | `Esc`           | Start     |
 
-On a phone you get a stick and three buttons.
+**Every key and pad button can be changed** under CONTROLS in the menu (or in
+the timeout menu mid-game): click a box and press what you want. A key that is
+already in use moves to the new action rather than meaning two things. There
+are three keyboard presets - WASD + Space, Arrows + ZXC, IJKL + ASD - and the
+bindings are remembered in the browser. Esc always pauses, whatever else is
+bound. On a phone you get a stick and three buttons.
 
 **Shooting** is timing: hold, and let go at the top of the jump. The meter by
 the shooter's head has a green band; a green release with nobody in your face
@@ -103,6 +108,7 @@ filled in, each browser keeps its own.
 
 ```bash
 node tools/simtest.js --report     # CPU against CPU, with the numbers
+node tools/controlstest.js         # key bindings: conflicts, presets, saving
 node tools/shot.js out.png --play  # a screenshot from headless Chrome (needs npm start)
 node tools/make-icons.js
 ```

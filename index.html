@@ -56,12 +56,7 @@
     <div id="message" class="hidden"><div class="big" id="msgBig"></div><div class="sub" id="msgSub"></div></div>
     <div id="meter" class="hidden"><div class="fill" id="meterFill"></div><div class="zone"></div></div>
     <div id="release" class="hidden"></div>
-    <div id="hints">
-      <span><b>WASD</b> move</span><span><b>SHIFT</b> sprint</span>
-      <span><b>SPACE</b> shoot · hold &amp; release at the top</span>
-      <span><b>E</b> pass</span><span><b>Q</b> alley-oop / switch</span>
-      <span><b>C</b> camera</span><span><b>ESC</b> pause</span>
-    </div>
+    <div id="hints"></div>
     <div id="touch" class="hidden">
       <div id="stick"><div id="knob"></div></div>
       <div id="tButtons">
@@ -85,6 +80,7 @@
           <div class="opt" data-opt="length"><span class="k">GAME</span><button class="v" id="optLength">QUICK · 5:00 · TO 11</button></div>
           <div class="opt" data-opt="quality"><span class="k">GRAPHICS</span><button class="v" id="optQuality">AUTO</button></div>
           <div class="opt" data-opt="sound"><span class="k">SOUND</span><button class="v" id="optSound">ON</button></div>
+          <div class="opt" data-opt="controls"><span class="k">CONTROLS</span><button class="v" id="optControls">WASD + SPACE</button></div>
         </div>
         <button id="play" class="primary">TIP OFF</button>
         <p class="fine">Enter or the A button starts. Gamepads work.</p>
@@ -115,6 +111,7 @@
     <div class="panel">
       <h2>TIMEOUT</h2>
       <button id="resume" class="primary">RESUME</button>
+      <button id="pauseControls">CONTROLS</button>
       <button id="quit">BACK TO THE MENU</button>
     </div>
   </div>
@@ -141,6 +138,23 @@
       </div>
       <button id="hiscoreOk" class="primary">OK</button>
       <p class="fine">Up and down for the letter, left and right to move along, shoot to confirm. Typing works too.</p>
+    </div>
+  </div>
+
+  <div id="controls" class="overlay hidden">
+    <div class="panel wide controlsPanel">
+      <div class="kicker">SETUP</div>
+      <h2>CONTROLS</h2>
+      <div class="presets" id="presets"></div>
+      <table class="binds">
+        <thead><tr><th></th><th>KEY</th><th>KEY 2</th><th>PAD</th><th>PAD 2</th></tr></thead>
+        <tbody id="bindBody"></tbody>
+      </table>
+      <p class="fine" id="bindHint"></p>
+      <div class="bindButtons">
+        <button id="padReset">RESET PAD</button>
+        <button id="controlsDone" class="primary">DONE</button>
+      </div>
     </div>
   </div>
 

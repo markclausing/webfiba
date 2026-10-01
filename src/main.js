@@ -25,6 +25,7 @@ import { Highscores, makeId, placeOf, NAME_LENGTH } from './highscores.js';
 import { NameEntry } from './nameEntry.js';
 import { boardFor } from './config.js';
 import { BTN } from './constants.js';
+import { ACTIONS, PRESETS, keyLabel, padLabel } from './controls.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -187,6 +188,7 @@ function startGame() {
   $('bugTarget').textContent = `FIRST TO ${state.target} · ${LENGTHS[state.length].label} · ${TIERS[state.tier].label}`;
   $('hints').classList.remove('fade');
   hintsShown = 0;
+  renderHints();
   audio.cheer(0.9, 3);
 }
 
@@ -210,7 +212,7 @@ function frameStep(dt) {
 
   if (replay) {
     stepReplay(dt, inp);
-  } else if (mode === 'play' || mode === 'menu' || mode === 'over' || mode === 'name') {
+  } else if (mode === 'play' || mode === 'menu' || mode === 'over' || mode === 'name' || (mode === 'controls' && controlsFrom === 'menu')) {
     const simInput = mode === 'play' ? worldInput(inp) : blankInput();
     acc += dt * timeScale;
     let n = 0;
@@ -788,10 +790,16 @@ function renderOptions() {
   $('optLength').textContent = optLabel('length', settings.length);
   $('optQuality').textContent = optLabel('quality', settings.quality);
   $('optSound').textContent = optLabel('sound', settings.sound);
+  const preset = input.controls.presetName();
+  $('optControls').textContent = preset ? PRESETS[preset].label : 'CUSTOM';
   renderScores(settings.length, settings.tier);
 }
 
 function cycle(key, by = 1) {
+  if (key === 'controls') {
+    openControls();
+    return;
+  }
   const list = OPTIONS[key];
   const at = list.indexOf(settings[key]);
   settings[key] = list[(at + by + list.length) % list.length];
@@ -870,6 +878,17 @@ function handleUi(inp) {
     if (inp.pressed.pause) resume();
     return;
   }
+  if (mode === 'controls') {
+    if (listening?.kind === 'pad' && input.padEdges.length) {
+      input.controls.bindPad(listening.action, listening.slot, input.padEdges[0]);
+      listening = null;
+      audio.tick();
+      renderBinds();
+    } else if (!listening && inp.pressed.escape) {
+      closeControls();
+    }
+    return;
+  }
   if (mode === 'menu') {
     const rows = menuRows();
     if (pressed & BTN.UP) setFocus(menuFocus - 1);
@@ -891,6 +910,155 @@ function handleUi(inp) {
   }
   if (mode === 'name') {
     nameEntry.step(inp.mask);
+  }
+}
+
+// --- Controls ---------------------------------------------------------------------------------------------------------------
+
+let listening = null;
+let controlsFrom = 'menu';
+
+function openControls() {
+  audio.start();
+  controlsFrom = mode;
+  mode = 'controls';
+  listening = null;
+  $('controls').classList.remove('hidden');
+  renderBinds();
+}
+
+function closeControls() {
+  listening = null;
+  $('controls').classList.add('hidden');
+  mode = controlsFrom;
+  renderOptions();
+  renderHints();
+}
+
+function renderBinds() {
+  const c = input.controls;
+  const presets = $('presets');
+  presets.innerHTML = '';
+  const current = c.presetName();
+  for (const [name, p] of Object.entries(PRESETS)) {
+    const b = document.createElement('button');
+    b.textContent = p.label;
+    b.className = name === current ? 'on' : '';
+    b.addEventListener('click', () => {
+      c.preset(name);
+      listening = null;
+      audio.tick();
+      renderBinds();
+    });
+    presets.appendChild(b);
+  }
+  const body = $('bindBody');
+  body.innerHTML = '';
+  for (const a of ACTIONS) {
+    const tr = document.createElement('tr');
+    const name = document.createElement('td');
+    name.className = 'act';
+    name.textContent = a.label;
+    tr.appendChild(name);
+    for (let slot = 0; slot < 2; slot++) tr.appendChild(slotCell(a.key, slot, 'key', keyLabel(c.keys[a.key][slot])));
+    if (a.pad) {
+      for (let slot = 0; slot < 2; slot++) tr.appendChild(slotCell(a.key, slot, 'pad', padLabel(c.pad[a.key][slot])));
+    } else {
+      const td = document.createElement('td');
+      td.colSpan = 2;
+      td.className = 'fixed';
+      td.textContent = 'STICK · D-PAD';
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+  const hint = $('bindHint');
+  const missing = c.unbound();
+  if (listening) {
+    hint.className = 'fine';
+    hint.textContent = listening.kind === 'pad'
+      ? 'Press a button on the gamepad. Esc cancels, Backspace clears.'
+      : 'Press a key. Esc cancels, Backspace clears.';
+  } else if (missing.length) {
+    hint.className = 'fine warn';
+    hint.textContent = `No key for: ${missing.map((k) => ACTIONS.find((a) => a.key === k).label).join(', ')}.`;
+  } else {
+    hint.className = 'fine';
+    hint.textContent = 'Click a box, then press the key or pad button you want. A key already in use moves here. Esc always pauses.';
+  }
+}
+
+function slotCell(action, slot, kind, text) {
+  const td = document.createElement('td');
+  const b = document.createElement('button');
+  b.className = `slot${text === '—' ? ' empty' : ''}`;
+  const on = listening && listening.action === action && listening.slot === slot && listening.kind === kind;
+  if (on) {
+    b.classList.add('listening');
+    b.textContent = kind === 'pad' ? 'PRESS…' : 'PRESS…';
+  } else {
+    b.textContent = text;
+  }
+  b.addEventListener('click', () => {
+    listening = on ? null : { action, slot, kind };
+    b.blur();
+    renderBinds();
+  });
+  td.appendChild(b);
+  return td;
+}
+
+// Takes the key before the game sees it, while a box is waiting for one.
+addEventListener('keydown', (e) => {
+  if (mode !== 'controls' || !listening) return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  const l = listening;
+  if (e.code === 'Escape') {
+    listening = null;
+  } else if (e.code === 'Backspace' || e.code === 'Delete') {
+    if (l.kind === 'pad') input.controls.bindPad(l.action, l.slot, null);
+    else input.controls.bindKey(l.action, l.slot, null);
+    listening = null;
+  } else if (l.kind === 'key') {
+    if (!input.controls.canBind(e.code)) return;
+    input.controls.bindKey(l.action, l.slot, e.code);
+    listening = null;
+    audio.tick();
+  }
+  renderBinds();
+}, true);
+
+$('controlsDone').addEventListener('click', () => closeControls());
+$('padReset').addEventListener('click', () => {
+  input.controls.resetPad();
+  listening = null;
+  renderBinds();
+});
+$('pauseControls').addEventListener('click', () => openControls());
+
+/** The strip of hints at the bottom of the HUD, in whatever keys are bound now. */
+function renderHints() {
+  const k = input.controls.keys;
+  const key = (a) => k[a].filter(Boolean).map(keyLabel)[0] || '—';
+  const move = ['up', 'left', 'down', 'right'].map(key).join('');
+  const items = [
+    [move.length <= 4 ? move : `${key('up')} ${key('left')} ${key('down')} ${key('right')}`, 'move'],
+    [key('sprint'), 'sprint'],
+    [key('shoot'), 'shoot · hold & release at the top'],
+    [key('pass'), 'pass'],
+    [key('lob'), 'alley-oop / switch'],
+    [key('camera'), 'camera'],
+    ['ESC', 'pause'],
+  ];
+  const el = $('hints');
+  el.innerHTML = '';
+  for (const [b, text] of items) {
+    const span = document.createElement('span');
+    const bold = document.createElement('b');
+    bold.textContent = b;
+    span.append(bold, ` ${text}`);
+    el.appendChild(span);
   }
 }
 

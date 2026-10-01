@@ -9,17 +9,7 @@
  */
 
 import { BTN } from './constants.js';
-
-const KEYS = {
-  up: ['KeyW', 'ArrowUp'],
-  down: ['KeyS', 'ArrowDown'],
-  left: ['KeyA', 'ArrowLeft'],
-  right: ['KeyD', 'ArrowRight'],
-  sprint: ['ShiftLeft', 'ShiftRight'],
-  shoot: ['Space', 'KeyJ'],
-  pass: ['KeyE', 'KeyK'],
-  lob: ['KeyQ', 'KeyL'],
-};
+import { Controls } from './controls.js';
 
 export class Input {
   constructor() {
@@ -28,35 +18,50 @@ export class Input {
     this.touch = { mx: 0, my: 0, shoot: false, pass: false, lob: false, sprint: false };
     this.usingPad = false;
     this.pad = null;
+    this.controls = new Controls();
+    /** Pad buttons that went down this frame, for the binding screen. */
+    this.padEdges = [];
     addEventListener('keydown', (e) => {
       if (e.repeat) return;
       this.down.add(e.code);
       this.edges.add(e.code);
       this.usingPad = false;
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      // Whatever is bound must not also scroll the page or press a focused button.
+      if (this.bound(e.code)) e.preventDefault();
     });
     addEventListener('keyup', (e) => this.down.delete(e.code));
     addEventListener('blur', () => this.down.clear());
     this.padPrev = [];
   }
 
-  any(list) {
-    return list.some((k) => this.down.has(k));
+  any(action) {
+    return this.controls.keys[action].some((k) => k && this.down.has(k));
+  }
+
+  edge(action) {
+    return this.controls.keys[action].some((k) => k && this.edges.has(k));
+  }
+
+  bound(code) {
+    return Object.values(this.controls.keys).some((list) => list.includes(code));
   }
 
   /** One frame's worth of input. */
   poll() {
-    let mx = (this.any(KEYS.right) ? 1 : 0) - (this.any(KEYS.left) ? 1 : 0);
-    let my = (this.any(KEYS.up) ? 1 : 0) - (this.any(KEYS.down) ? 1 : 0);
-    let sprint = this.any(KEYS.sprint);
-    let shoot = this.any(KEYS.shoot);
-    let pass = this.any(KEYS.pass);
-    let lob = this.any(KEYS.lob);
+    let mx = (this.any('right') ? 1 : 0) - (this.any('left') ? 1 : 0);
+    let my = (this.any('up') ? 1 : 0) - (this.any('down') ? 1 : 0);
+    let sprint = this.any('sprint');
+    let shoot = this.any('shoot');
+    let pass = this.any('pass');
+    let lob = this.any('lob');
     const pressed = {
-      pause: this.edges.has('Escape') || this.edges.has('KeyP'),
-      camera: this.edges.has('KeyC'),
+      // Escape always pauses, whatever else is bound: it is the way out.
+      pause: this.edges.has('Escape') || this.edge('pause'),
+      camera: this.edge('camera'),
       confirm: this.edges.has('Enter'),
+      escape: this.edges.has('Escape'),
     };
+    this.padEdges = [];
     this.edges.clear();
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -78,12 +83,16 @@ export class Input {
       if (b(13)) my = -1;
       if (b(14)) mx = -1;
       if (b(15)) mx = 1;
-      sprint ||= b(7) || b(5) || (gp.buttons[7]?.value || 0) > 0.3;
-      shoot ||= b(2);
-      pass ||= b(0);
-      lob ||= b(3) || b(1);
-      pressed.pause ||= edge(9);
-      pressed.camera ||= edge(8);
+      const pad = this.controls.pad;
+      const held = (a) => pad[a].some((i) => i !== null && (b(i) || (gp.buttons[i]?.value || 0) > 0.3));
+      const hit = (a) => pad[a].some((i) => i !== null && edge(i));
+      sprint ||= held('sprint');
+      shoot ||= held('shoot');
+      pass ||= held('pass');
+      lob ||= held('lob');
+      pressed.pause ||= hit('pause');
+      pressed.camera ||= hit('camera');
+      gp.buttons.forEach((x, i) => { if (x.pressed && !prev[i]) this.padEdges.push(i); });
       this.padPrev = gp.buttons.map((x) => x.pressed);
       break;
     }
