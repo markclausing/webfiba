@@ -87,7 +87,7 @@ export class Board {
       // Anything that actually landed gets announced. Worked out from the board
       // rather than from what was sent, so a result that did not make the top ten
       // stays quiet and a result arriving for the second time is not news.
-      this.shout(newRows(before, after));
+      await this.shout(newRows(before, after));
     }
     return json({ board: after });
   }
@@ -161,21 +161,31 @@ export class Board {
   /**
    * Tells Discord about it, if a webhook has been set.
    *
-   * Deliberately not awaited: Discord being slow, rate limiting us or simply
-   * down must not make posting a result fail. The board is the product here; the
-   * announcement is a nicety.
+   * Discord being slow, rate limiting us or simply down must not make posting
+   * a result fail: every failure is caught and logged, never thrown. The board
+   * is the product here; the announcement is a nicety.
    */
   shout(rows) {
     const url = this.env?.DISCORD_WEBHOOK;
-    if (!url || !rows.length) return;
+    if (!rows.length) return;
+    if (!url) {
+      console.log('announce: no DISCORD_WEBHOOK on this Worker');
+      return;
+    }
+    // Awaited, with a short fuse. Left to run after the response, the post was
+    // cut off with the request and never arrived; four seconds is plenty for
+    // Discord and a slow Discord still cannot hold up a score for long.
     const post = fetch(url, {
+      signal: AbortSignal.timeout(4000),
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(announcement(rows, this.env?.GAME_URL)),
-    }).catch(() => { /* the record is safe; the message was not */ });
-    // Keeps the object alive long enough to finish the request after the
-    // player's browser already has its answer.
-    this.state?.waitUntil?.(post);
+    }).then(async (res) => {
+      // Logged either way, so `wrangler tail` can say why a post did not appear.
+      if (res.ok) console.log(`announce: posted ${rows.length} row(s)`);
+      else console.log(`announce: Discord said ${res.status} ${(await res.text()).slice(0, 300)}`);
+    }).catch((err) => console.log(`announce: failed ${err.message}`));
+    return post;
   }
 }
 
