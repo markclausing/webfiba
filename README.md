@@ -100,9 +100,9 @@ set in the menu, or forced with `?quality=low|medium|high|ultra`.
 
 Shared with the rest of the family's plumbing: ten wins per list, kept in
 localStorage, merged with a shared board when there is one. `npm start` serves
-the board in development; in production it is the Cloudflare Worker in
-`worker/` - see `worker/README.md`. Until `DEFAULT_BOARD` in `src/config.js` is
-filled in, each browser keeps its own.
+the board in development; in production it is the Cloudflare Worker at
+https://webfiba.vibecoach.workers.dev - see `worker/README.md`. New wins that
+make a top ten are posted to Discord.
 
 ## Tools
 

@@ -1,7 +1,9 @@
 # The score board
 
-Not deployed yet. It answers `GET /highscores` and `POST /highscores`, holds one
-Durable Object, posts new wins to Discord when a webhook is set.
+Deployed at **https://webfiba.vibecoach.workers.dev**, which is the address in
+`src/config.js`. It answers `GET /highscores` and `POST /highscores`, holds one
+Durable Object, posts new wins to Discord when a webhook is set, and has an admin key set for
+taking rows off again.
 
 Two commands and the board is shared:
 

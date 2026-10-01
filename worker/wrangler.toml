@@ -6,7 +6,7 @@
 
 name = "webfiba"
 main = "index.js"
-compatibility_date = "2025-04-01"
+compatibility_date = "2026-09-01"
 
 [vars]
 GAME_URL = "https://markclausing.github.io/webfiba/"
