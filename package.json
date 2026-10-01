@@ -1,0 +1,13 @@
+{
+  "name": "webfiba",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "3x3 basketball in the browser under arena lights: FIBA rules, physically based rendering, no build step.",
+  "scripts": {
+    "start": "node server/board.js",
+    "test": "node tools/simtest.js && node tools/boardtest.js",
+    "test:sim": "node tools/simtest.js",
+    "test:board": "node tools/boardtest.js"
+  }
+}

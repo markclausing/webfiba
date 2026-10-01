@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>WebFIBA 3×3</title>
+  <meta name="description" content="3x3 basketball in the browser, FIBA rules, under arena lights.">
+  <meta name="theme-color" content="#05070c">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@500;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.js",
+        "three/addons/": "./vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <div id="loading" class="overlay">
+    <div class="loader">
+      <div class="ballspin"></div>
+      <p id="loadingText">BUILDING THE ARENA</p>
+    </div>
+  </div>
+
+  <!-- In-game HUD -->
+  <div id="hud" class="hidden">
+    <div id="bug">
+      <div class="team home" id="bugHome">
+        <span class="swatch"></span><span class="city" id="homeName">AMS</span>
+        <span class="pts" id="homePts">0</span>
+        <div class="fouls" id="homeFouls"></div>
+      </div>
+      <div class="clocks">
+        <span class="game" id="gameClock">5:00</span>
+        <span class="shot" id="shotClock">12</span>
+      </div>
+      <div class="team away" id="bugAway">
+        <span class="pts" id="awayPts">0</span>
+        <span class="city" id="awayName">RIG</span><span class="swatch"></span>
+        <div class="fouls" id="awayFouls"></div>
+      </div>
+      <div class="target" id="bugTarget">FIRST TO 11</div>
+    </div>
+    <div id="flow"><span class="label">FLOW</span><span class="chev"></span><span class="chev"></span><span class="chev"></span><span class="chev"></span></div>
+    <div id="clear" class="hidden">CLEAR IT</div>
+    <div id="message" class="hidden"><div class="big" id="msgBig"></div><div class="sub" id="msgSub"></div></div>
+    <div id="meter" class="hidden"><div class="fill" id="meterFill"></div><div class="zone"></div></div>
+    <div id="release" class="hidden"></div>
+    <div id="hints">
+      <span><b>WASD</b> move</span><span><b>SHIFT</b> sprint</span>
+      <span><b>SPACE</b> shoot · hold &amp; release at the top</span>
+      <span><b>E</b> pass</span><span><b>Q</b> alley-oop / switch</span>
+      <span><b>C</b> camera</span><span><b>ESC</b> pause</span>
+    </div>
+    <div id="touch" class="hidden">
+      <div id="stick"><div id="knob"></div></div>
+      <div id="tButtons">
+        <button id="tLob" class="tb small">LOB</button>
+        <button id="tPass" class="tb">PASS</button>
+        <button id="tShoot" class="tb big">SHOOT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title and menu -->
+  <div id="menu" class="overlay hidden">
+    <div class="menuGrid">
+      <section class="titleBlock">
+        <div class="kicker">WEBFIBA</div>
+        <h1>3<span class="x">×</span>3</h1>
+        <p class="tag">Half court. Twelve seconds. First to twenty-one.</p>
+        <div class="opts">
+          <div class="opt" data-opt="away"><span class="k">OPPONENT</span><button class="v" id="optAway">RIGA</button></div>
+          <div class="opt" data-opt="tier"><span class="k">CPU</span><button class="v" id="optTier">PRO</button></div>
+          <div class="opt" data-opt="length"><span class="k">GAME</span><button class="v" id="optLength">QUICK · 5:00 · TO 11</button></div>
+          <div class="opt" data-opt="quality"><span class="k">GRAPHICS</span><button class="v" id="optQuality">AUTO</button></div>
+          <div class="opt" data-opt="sound"><span class="k">SOUND</span><button class="v" id="optSound">ON</button></div>
+        </div>
+        <button id="play" class="primary">TIP OFF</button>
+        <p class="fine">Enter or the A button starts. Gamepads work.</p>
+      </section>
+      <aside class="side">
+        <div class="card">
+          <h3>BOARD <span id="scoresLevel" class="dim"></span></h3>
+          <table class="scores"><tbody id="scoresBody"></tbody></table>
+          <p class="fine" id="scoresNote"></p>
+        </div>
+        <div class="card controls">
+          <h3>HOW TO PLAY</h3>
+          <ul>
+            <li><b>Shoot</b> — hold, release at the top of the jump. Green is perfect.</li>
+            <li><b>Dunk</b> — sprint at the rim and shoot inside four metres.</li>
+            <li><b>Pass</b> — aim with the stick; centred finds the open man.</li>
+            <li><b>Alley-oop</b> — lob to a team-mate cutting to the rim.</li>
+            <li><b>Flow</b> — quick passes light the floor and lift your shooting.</li>
+            <li><b>Clear it</b> — after a rebound or steal, take it behind the arc.</li>
+            <li><b>Defence</b> — shoot to jump, pass to reach, lob to switch.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="panel">
+      <h2>TIMEOUT</h2>
+      <button id="resume" class="primary">RESUME</button>
+      <button id="quit">BACK TO THE MENU</button>
+    </div>
+  </div>
+
+  <div id="gameover" class="overlay hidden">
+    <div class="panel wide">
+      <div class="kicker" id="overKicker">FINAL</div>
+      <h2 id="overTitle">GAME</h2>
+      <div class="final" id="overScore"></div>
+      <table class="stats" id="overStats"></table>
+      <button id="overBack" class="primary">CONTINUE</button>
+    </div>
+  </div>
+
+  <div id="hiscore" class="overlay hidden">
+    <div class="panel">
+      <div class="kicker">ON THE BOARD</div>
+      <h2>NEW WIN</h2>
+      <p id="hiscoreLine" class="status"></p>
+      <div class="picker">
+        <div id="hiscoreUp" class="letterRow"></div>
+        <div id="hiscoreLetters" class="letters"></div>
+        <div id="hiscoreDown" class="letterRow"></div>
+      </div>
+      <button id="hiscoreOk" class="primary">OK</button>
+      <p class="fine">Up and down for the letter, left and right to move along, shoot to confirm. Typing works too.</p>
+    </div>
+  </div>
+
+  <div id="replayTag" class="hidden">REPLAY</div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

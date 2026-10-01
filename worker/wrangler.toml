@@ -1,0 +1,20 @@
+# Deploy with:  npx wrangler login  &&  npx wrangler deploy
+#
+# A Worker of its own rather than one of the other games', on purpose: the board
+# lives in a single Durable Object under one key, so sharing a Worker would mean
+# basketball results and lap times in one table.
+
+name = "webfiba"
+main = "index.js"
+compatibility_date = "2025-04-01"
+
+[vars]
+GAME_URL = "https://markclausing.github.io/webfiba/"
+
+[[durable_objects.bindings]]
+name = "BOARD"
+class_name = "Board"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Board"]
